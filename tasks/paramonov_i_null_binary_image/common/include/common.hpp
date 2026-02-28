@@ -20,7 +20,9 @@ struct Point {
     return x == other.x && y == other.y;
   }
 
-  bool operator!=(const Point &other) const { return !(*this == other); }
+  bool operator!=(const Point &other) const {
+    return !(*this == other);
+  }
 
   bool operator<(const Point &other) const {
     return (x < other.x) || (x == other.x && y < other.y);
@@ -40,4 +42,4 @@ using OutType = BinaryImage;
 using TestType = std::tuple<int, std::string>;
 using BaseTask = ppc::task::Task<InType, OutType>;
 
-} // namespace paramonov_i_null_binary_image_seq
+}  // namespace paramonov_i_null_binary_image_seq

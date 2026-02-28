@@ -9,11 +9,10 @@
 
 namespace paramonov_i_null_binary_image_seq {
 
-class ParamonovINullBinaryImagePerfTests
-    : public ppc::util::BaseRunPerfTests<InType, OutType> {
+class ParamonovINullBinaryImagePerfTests : public ppc::util::BaseRunPerfTests<InType, OutType> {
   static constexpr size_t kSize = 512;
 
-protected:
+ protected:
   void SetUp() override {
     input_.width = static_cast<int>(kSize);
     input_.height = static_cast<int>(kSize);
@@ -31,26 +30,28 @@ protected:
     return !out.convex_hulls.empty();
   }
 
-  InType GetTestInputData() override { return input_; }
+  InType GetTestInputData() override {
+    return input_;
+  }
 
-private:
+ private:
   InType input_;
 };
 
-TEST_P(ParamonovINullBinaryImagePerfTests, RunPerf) { ExecuteTest(GetParam()); }
+TEST_P(ParamonovINullBinaryImagePerfTests, RunPerf) {
+  ExecuteTest(GetParam());
+}
 
 namespace {
 
 const auto kPerfTasks =
-    ppc::util::MakeAllPerfTasks<InType, ParamonovINullBinaryImageSeq>(
-        PPC_SETTINGS_paramonov_i_null_binary_image_seq);
+    ppc::util::MakeAllPerfTasks<InType, ParamonovINullBinaryImageSeq>(PPC_SETTINGS_paramonov_i_null_binary_image_seq);
 
 const auto kValues = ppc::util::TupleToGTestValues(kPerfTasks);
 
-INSTANTIATE_TEST_SUITE_P(
-    Perf, ParamonovINullBinaryImagePerfTests, kValues,
-    ParamonovINullBinaryImagePerfTests::CustomPerfTestName);
+INSTANTIATE_TEST_SUITE_P(Perf, ParamonovINullBinaryImagePerfTests, kValues,
+                         ParamonovINullBinaryImagePerfTests::CustomPerfTestName);
 
-} // namespace
+}  // namespace
 
-} // namespace paramonov_i_null_binary_image_seq
+}  // namespace paramonov_i_null_binary_image_seq
