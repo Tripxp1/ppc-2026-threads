@@ -44,8 +44,9 @@ TEST_P(ParamonovIConstrHullPerfTests, RunPerf) {
 
 namespace {
 
-const auto kPerfTasks = ppc::util::MakeAllPerfTasks<InType, ParamonovIConstrHullSeq>(
-    PPC_SETTINGS_paramonov_i_constr_hull_for_binary_image_seq);
+// Используем только последовательную версию для тестов производительности
+const auto kPerfTasks =
+    ppc::util::AddPerfTasks<InType, ParamonovIConstrHullSeq>(PPC_SETTINGS_paramonov_i_constr_hull_for_binary_image_seq);
 
 const auto kValues = ppc::util::TupleToGTestValues(kPerfTasks);
 
