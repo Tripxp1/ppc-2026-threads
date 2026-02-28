@@ -124,7 +124,8 @@ bool CompareHullSets(const std::vector<std::vector<Point>> &a, const std::vector
 
 class ParamonovINullBinaryImageFuncTests : public ppc::util::BaseRunFuncTests<InType, OutType, TestType> {
  public:
-  static std::string FormatTestParam(const TestType &p) {
+  // Исправлено: метод должен называться PrintTestParam, а не FormatTestParam
+  static std::string PrintTestParam(const TestType &p) {
     return std::to_string(std::get<0>(p)) + "_" + std::get<1>(p);
   }
 
