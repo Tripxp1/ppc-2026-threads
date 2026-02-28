@@ -2,9 +2,7 @@
 
 #include <algorithm>
 #include <array>
-#include <cmath>
 #include <cstddef>
-#include <cstdint>
 #include <string>
 #include <tuple>
 #include <vector>
@@ -12,156 +10,212 @@
 #include "paramonov_i_null_binary_image/common/include/common.hpp"
 #include "paramonov_i_null_binary_image/seq/include/ops_seq.hpp"
 #include "util/include/func_test_util.hpp"
+#include "util/include/util.hpp"
 
 namespace paramonov_i_null_binary_image {
 
+using TestType = std::tuple<InType, std::vector<std::vector<Point>>, std::string>;
+
+// Helper functions moved outside the class to reduce complexity
 namespace {
-
-struct TestCase {
-  BinaryImage image;
-  std::vector<std::vector<Point>> expected_hulls;
-};
-
-BinaryImage CreateImage(int width, int height, uint8_t value = 0) {
-  BinaryImage img;
-  img.width = width;
-  img.height = height;
-  img.pixels.assign(static_cast<size_t>(width) * static_cast<size_t>(height), value);
-  return img;
+bool ArePointsEqual(const Point &p1, const Point &p2) {
+  return p1.x == p2.x && p1.y == p2.y;
 }
 
-void SetPixelValue(BinaryImage &img, int col, int row, uint8_t value) {
-  size_t idx = (static_cast<size_t>(row) * static_cast<size_t>(img.width)) + static_cast<size_t>(col);
-  img.pixels[idx] = value;
+void SortPoints(std::vector<Point> &points) {
+  std::ranges::sort(points,
+                    [](const Point &lhs, const Point &rhs) { return std::tie(lhs.x, lhs.y) < std::tie(rhs.x, rhs.y); });
 }
 
-TestCase CreateTestCase1() {
-  TestCase tc;
-  tc.image = CreateImage(5, 5);
-  SetPixelValue(tc.image, 2, 2, 200);
-  tc.expected_hulls = {{{2, 2}}};
-  return tc;
-}
+bool AreHullsEqual(const std::vector<Point> &hull1, const std::vector<Point> &hull2) {
+  if (hull1.size() != hull2.size()) {
+    return false;
+  }
 
-TestCase CreateTestCase2() {
-  TestCase tc;
-  tc.image = CreateImage(6, 6);
-  SetPixelValue(tc.image, 1, 1, 255);
-  SetPixelValue(tc.image, 4, 4, 255);
-  tc.expected_hulls = {{{1, 1}}, {{4, 4}}};
-  return tc;
-}
+  std::vector<Point> sorted1 = hull1;
+  std::vector<Point> sorted2 = hull2;
 
-TestCase CreateTestCase3() {
-  TestCase tc;
-  tc.image = CreateImage(7, 3);
-  SetPixelValue(tc.image, 2, 1, 255);
-  SetPixelValue(tc.image, 3, 1, 255);
-  SetPixelValue(tc.image, 4, 1, 255);
-  tc.expected_hulls = {{{2, 1}, {4, 1}}};
-  return tc;
-}
+  SortPoints(sorted1);
+  SortPoints(sorted2);
 
-TestCase CreateTestCase4() {
-  TestCase tc;
-  tc.image = CreateImage(8, 8);
-  for (int row = 2; row <= 5; ++row) {
-    for (int col = 3; col <= 6; ++col) {
-      SetPixelValue(tc.image, col, row, 255);
+  for (size_t i = 0; i < sorted1.size(); ++i) {
+    if (!ArePointsEqual(sorted1[i], sorted2[i])) {
+      return false;
     }
   }
-  tc.expected_hulls = {{{3, 2}, {6, 2}, {6, 5}, {3, 5}}};
-  return tc;
+  return true;
 }
 
-TestCase CreateTestCase5() {
-  TestCase tc;
-  tc.image = CreateImage(9, 9);
-  for (int row = 0; row < 9; ++row) {
-    for (int col = 0; col < 9; ++col) {
-      if (std::abs(col - 4) + std::abs(row - 4) <= 4) {
-        SetPixelValue(tc.image, col, row, 255);
-      }
+void SortHulls(std::vector<std::vector<Point>> &hulls) {
+  for (auto &hull : hulls) {
+    SortPoints(hull);
+  }
+
+  std::ranges::sort(hulls, [](const std::vector<Point> &a, const std::vector<Point> &b) {
+    if (a.empty() || b.empty()) {
+      return a.size() < b.size();
     }
-  }
-  tc.expected_hulls = {{{0, 4}, {4, 0}, {8, 4}, {4, 8}}};
-  return tc;
-}
-
-const std::vector<TestCase> &GetAllTestCases() {
-  static std::vector<TestCase> cases = {CreateTestCase1(), CreateTestCase2(), CreateTestCase3(), CreateTestCase4(),
-                                        CreateTestCase5()};
-  return cases;
-}
-
-const TestCase &GetTestCase(int id) {
-  return GetAllTestCases()[static_cast<size_t>(id)];
-}
-
-std::vector<Point> NormalizeHull(const std::vector<Point> &hull) {
-  std::vector<Point> result = hull;
-  std::ranges::sort(result, [](const Point &a, const Point &b) { return (a.y != b.y) ? (a.y < b.y) : (a.x < b.x); });
-  auto [first, last] = std::ranges::unique(result);
-  result.erase(first, last);
-  return result;
-}
-
-std::vector<std::vector<Point>> NormalizeAllHulls(const std::vector<std::vector<Point>> &hulls) {
-  std::vector<std::vector<Point>> result;
-  result.reserve(hulls.size());
-  for (const auto &h : hulls) {
-    result.push_back(NormalizeHull(h));
-  }
-  std::ranges::sort(result);
-  return result;
-}
-
-bool CompareHullSets(const std::vector<std::vector<Point>> &a, const std::vector<std::vector<Point>> &b) {
-  return NormalizeAllHulls(a) == NormalizeAllHulls(b);
+    return std::tie(a[0].x, a[0].y) < std::tie(b[0].x, b[0].y);
+  });
 }
 
 }  // namespace
 
-class ParamonovINullBinaryImageFuncTests : public ppc::util::BaseRunFuncTests<InType, OutType, TestType> {
+class ParamonovIFuncTest : public ppc::util::BaseRunFuncTests<InType, OutType, TestType> {
  public:
-  // Исправлено: метод должен называться PrintTestParam, а не FormatTestParam
-  static std::string PrintTestParam(const TestType &p) {
-    return std::to_string(std::get<0>(p)) + "_" + std::get<1>(p);
+  static std::string PrintTestParam(const TestType &test_param) {
+    return std::get<2>(test_param);
   }
 
  protected:
-  bool CheckTestOutputData(OutType &out) override {
-    auto param = std::get<2>(GetParam());
-    int id = std::get<0>(param);
-    const auto &tc = GetTestCase(id);
-    return CompareHullSets(tc.expected_hulls, out.convex_hulls);
+  void SetUp() override {
+    TestType params = std::get<static_cast<std::size_t>(ppc::util::GTestParamIndex::kTestParams)>(GetParam());
+    input_data_ = std::get<0>(params);
+    expected_result_ = std::get<1>(params);
   }
 
-  InType GetTestInputData() override {
-    auto param = std::get<2>(GetParam());
-    int id = std::get<0>(param);
-    return GetTestCase(id).image;
+  bool CheckTestOutputData(OutType &output_data) final {
+    if (output_data.size() != expected_result_.size()) {
+      return false;
+    }
+
+    std::vector<std::vector<Point>> sorted_output = output_data;
+    std::vector<std::vector<Point>> sorted_expected = expected_result_;
+
+    SortHulls(sorted_output);
+    SortHulls(sorted_expected);
+
+    for (size_t i = 0; i < sorted_output.size(); ++i) {
+      if (!AreHullsEqual(sorted_output[i], sorted_expected[i])) {
+        return false;
+      }
+    }
+
+    return true;
   }
+
+  InType GetTestInputData() final {
+    return input_data_;
+  }
+
+ private:
+  InType input_data_;
+  OutType expected_result_;
 };
 
 namespace {
 
-TEST_P(ParamonovINullBinaryImageFuncTests, Test) {
-  ExecuteTest(GetParam());
+InType CreateEmptyImage(int width, int height) {
+  InType img;
+  img.width = width;
+  img.height = height;
+  img.data.assign(static_cast<size_t>(width) * static_cast<size_t>(height), 0);
+  return img;
 }
 
-const std::array<TestType, 5> kTestParams = {
-    std::make_tuple(0, "case1_single_pixel"), std::make_tuple(1, "case2_two_pixels"),
-    std::make_tuple(2, "case3_horizontal_line"), std::make_tuple(3, "case4_rectangle"),
-    std::make_tuple(4, "case5_diamond")};
+void DrawRectangle(InType &img, int x1, int y1, int x2, int y2) {
+  for (int row = y1; row <= y2; ++row) {
+    for (int col = x1; col <= x2; ++col) {
+      if (col >= 0 && col < img.width && row >= 0 && row < img.height) {
+        img.data[(static_cast<size_t>(row) * static_cast<size_t>(img.width)) + static_cast<size_t>(col)] = 255;
+      }
+    }
+  }
+}
 
-const auto kTasks = ppc::util::AddFuncTask<ParamonovINullBinaryImageSeq, InType>(
-    kTestParams, PPC_SETTINGS_paramonov_i_null_binary_image);
+std::vector<Point> GetRectangleHull(int x1, int y1, int x2, int y2) {
+  return {{x1, y1}, {x2, y1}, {x2, y2}, {x1, y2}};
+}
 
-const auto kValues = ppc::util::ExpandToValues(kTasks);
-const auto kName = ParamonovINullBinaryImageFuncTests::PrintFuncTestName<ParamonovINullBinaryImageFuncTests>;
+const std::array<TestType, 7> kTestParams = {{
+    // Test 1: Single 3x3 square
+    std::make_tuple(
+        []() {
+          auto img = CreateEmptyImage(10, 10);
+          DrawRectangle(img, 1, 1, 3, 3);
+          return img;
+        }(),
+        std::vector<std::vector<Point>>{GetRectangleHull(1, 1, 3, 3)},
+        "single_square"),
 
-INSTANTIATE_TEST_SUITE_P(ParamonovTests, ParamonovINullBinaryImageFuncTests, kValues, kName);
+    // Test 2: Two separate squares
+    std::make_tuple(
+        []() {
+          auto img = CreateEmptyImage(20, 20);
+          DrawRectangle(img, 2, 2, 4, 4);
+          DrawRectangle(img, 10, 10, 12, 12);
+          return img;
+        }(),
+        std::vector<std::vector<Point>>{GetRectangleHull(2, 2, 4, 4),
+                                        GetRectangleHull(10, 10, 12, 12)},
+        "two_squares"),
+
+    // Test 3: 5x3 rectangle
+    std::make_tuple(
+        []() {
+          auto img = CreateEmptyImage(15, 15);
+          DrawRectangle(img, 2, 3, 6, 5);
+          return img;
+        }(),
+        std::vector<std::vector<Point>>{GetRectangleHull(2, 3, 6, 5)},
+        "rectangle"),
+
+    // Test 4: Three components
+    std::make_tuple(
+        []() {
+          auto img = CreateEmptyImage(30, 30);
+          DrawRectangle(img, 1, 1, 3, 3);
+          DrawRectangle(img, 10, 10, 12, 12);
+          DrawRectangle(img, 20, 5, 22, 7);
+          return img;
+        }(),
+        std::vector<std::vector<Point>>{GetRectangleHull(1, 1, 3, 3),
+                                        GetRectangleHull(10, 10, 12, 12),
+                                        GetRectangleHull(20, 5, 22, 7)},
+        "three_components"),
+
+    // Test 5: Empty image
+    std::make_tuple(CreateEmptyImage(10, 10), std::vector<std::vector<Point>>{},
+                    "empty_image"),
+
+    // Test 6: Horizontal line (should give 2 points)
+    std::make_tuple(
+        []() {
+          auto img = CreateEmptyImage(10, 10);
+          for (int col = 2; col <= 5; ++col) {
+            img.data[(static_cast<size_t>(5) * static_cast<size_t>(img.width)) + 
+                      static_cast<size_t>(col)] = 255;
+          }
+          return img;
+        }(),
+        std::vector<std::vector<Point>>{{{2, 5}, {5, 5}}},
+        "horizontal_line"),
+
+    // Test 7: Vertical line (should give 2 points)
+    std::make_tuple(
+        []() {
+          auto img = CreateEmptyImage(10, 10);
+          for (int row = 2; row <= 5; ++row) {
+            img.data[(static_cast<size_t>(row) * static_cast<size_t>(img.width)) + 
+                      static_cast<size_t>(5)] = 255;
+          }
+          return img;
+        }(),
+        std::vector<std::vector<Point>>{{{5, 2}, {5, 5}}},
+        "vertical_line")}};
+
+const auto kTestTasksList = std::tuple_cat(
+    ppc::util::AddFuncTask<BinaryConvexHullSEQ, InType>(kTestParams, PPC_SETTINGS_paramonov_i_null_binary_image));
+
+const auto kGtestValues = ppc::util::ExpandToValues(kTestTasksList);
+
+const auto kFuncTestName = ParamonovIFuncTest::PrintFuncTestName<ParamonovIFuncTest>;
+
+INSTANTIATE_TEST_SUITE_P(BinaryConvexHullTests, ParamonovIFuncTest, kGtestValues, kFuncTestName);
+
+TEST_P(ParamonovIFuncTest, RunFunctionalTests) {
+  ExecuteTest(GetParam());
+}
 
 }  // namespace
 
