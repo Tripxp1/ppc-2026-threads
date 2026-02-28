@@ -1,194 +1,174 @@
 #include "paramonov_i_null_binary_image/seq/include/ops_seq.hpp"
 
 #include <algorithm>
-#include <array>
 #include <cstddef>
 #include <cstdint>
-#include <queue>
-#include <ranges>
-#include <utility>
+#include <stack>
+#include <tuple>
+#include <utility>  // для std::move
 #include <vector>
 
 #include "paramonov_i_null_binary_image/common/include/common.hpp"
 
-namespace paramonov_i_null_binary_image {
-
 namespace {
 
-constexpr uint8_t kBinaryThreshold = 128;
-constexpr std::array<std::pair<int, int>, 4> kNeighborOffsets = {std::make_pair(1, 0), std::make_pair(-1, 0),
-                                                                 std::make_pair(0, 1), std::make_pair(0, -1)};
+using Point = paramonov_i_null_binary_image::Point;
 
-int64_t ComputeCrossProduct(const Point &a, const Point &b, const Point &c) {
-  int64_t abx = static_cast<int64_t>(b.x) - static_cast<int64_t>(a.x);
-  int64_t aby = static_cast<int64_t>(b.y) - static_cast<int64_t>(a.y);
-  int64_t bcx = static_cast<int64_t>(c.x) - static_cast<int64_t>(b.x);
-  int64_t bcy = static_cast<int64_t>(c.y) - static_cast<int64_t>(b.y);
-  return (abx * bcy) - (aby * bcx);
+int64_t CrossProduct(const Point &a, const Point &b, const Point &c) {
+  return (static_cast<int64_t>(b.x - a.x) * (c.y - a.y)) - (static_cast<int64_t>(b.y - a.y) * (c.x - a.x));
 }
 
-bool IsForegroundPixel(uint8_t pixel) {
-  return pixel > kBinaryThreshold;
+// Helper function for building lower hull
+void BuildLowerHull(const std::vector<Point> &points, size_t n, std::vector<Point> &hull) {
+  for (size_t i = 0; i < n; ++i) {
+    while (hull.size() >= 2) {
+      const Point &a = hull[hull.size() - 2];
+      const Point &b = hull.back();
+      if (CrossProduct(a, b, points[i]) <= 0) {
+        hull.pop_back();
+      } else {
+        break;
+      }
+    }
+    hull.push_back(points[i]);
+  }
 }
 
-bool IsValidCoordinate(int x, int y, int width, int height) {
-  return x >= 0 && x < width && y >= 0 && y < height;
+// Helper function for building upper hull
+void BuildUpperHull(const std::vector<Point> &points, size_t n, size_t lower_size, std::vector<Point> &hull) {
+  for (size_t i = n - 1; i > 0; --i) {
+    const size_t idx = i - 1;
+    while (hull.size() > lower_size) {
+      const Point &a = hull[hull.size() - 2];
+      const Point &b = hull.back();
+      if (CrossProduct(a, b, points[idx]) <= 0) {
+        hull.pop_back();
+      } else {
+        break;
+      }
+    }
+    hull.push_back(points[idx]);
+  }
+}
+
+void BuildConvexHull(std::vector<Point> &points, std::vector<Point> &hull) {
+  const size_t n = points.size();
+  if (n <= 2) {
+    hull.assign(points.begin(), points.end());
+    return;
+  }
+
+  // Sort points in-place
+  std::ranges::sort(points,
+                    [](const Point &lhs, const Point &rhs) { return std::tie(lhs.x, lhs.y) < std::tie(rhs.x, rhs.y); });
+
+  hull.clear();
+  hull.reserve(n + 1);  // Reserve space to avoid reallocations
+
+  // Build lower hull
+  BuildLowerHull(points, n, hull);
+
+  // Build upper hull
+  const size_t lower_size = hull.size();
+  BuildUpperHull(points, n, lower_size, hull);
+
+  // Remove the last point if it's the same as the first (closed polygon)
+  if (hull.size() > 1 && hull.front().x == hull.back().x && hull.front().y == hull.back().y) {
+    hull.pop_back();
+  }
+}
+
+// Helper function to process a single direction
+inline void TryAddNeighbor(const std::vector<uint8_t> &image, int width, int height, int next_x, int next_y, int label,
+                           std::vector<int> &labels, std::stack<Point> &stack) {
+  if (next_x >= 0 && next_x < width && next_y >= 0 && next_y < height) {
+    const size_t next_index = (static_cast<size_t>(next_y) * static_cast<size_t>(width)) + static_cast<size_t>(next_x);
+    if (image[next_index] != 0 && labels[next_index] == 0) {
+      labels[next_index] = label;
+      stack.push({next_x, next_y});
+    }
+  }
+}
+
+void ProcessComponent(const std::vector<uint8_t> &image, int width, int height, int start_x, int start_y, int label,
+                      std::vector<int> &labels, std::vector<Point> &component_points) {
+  std::stack<Point> stack;
+  stack.push({start_x, start_y});
+
+  const size_t start_index = (static_cast<size_t>(start_y) * static_cast<size_t>(width)) + static_cast<size_t>(start_x);
+  labels[start_index] = label;
+
+  component_points.clear();
+  component_points.reserve(100);  // Reserve some space to avoid reallocations
+
+  while (!stack.empty()) {
+    const Point current = stack.top();
+    stack.pop();
+    component_points.push_back(current);
+
+    // Process all 4 directions using helper function
+    TryAddNeighbor(image, width, height, current.x + 1, current.y, label, labels, stack);
+    TryAddNeighbor(image, width, height, current.x - 1, current.y, label, labels, stack);
+    TryAddNeighbor(image, width, height, current.x, current.y + 1, label, labels, stack);
+    TryAddNeighbor(image, width, height, current.x, current.y - 1, label, labels, stack);
+  }
 }
 
 }  // namespace
 
-ParamonovINullBinaryImageSeq::ParamonovINullBinaryImageSeq(const InType &in) : work_image_(in) {
+namespace paramonov_i_null_binary_image {
+
+BinaryConvexHullSEQ::BinaryConvexHullSEQ(const InType &in) {
   SetTypeOfTask(GetStaticTypeOfTask());
   GetInput() = in;
 }
 
-bool ParamonovINullBinaryImageSeq::ValidationImpl() {
-  const auto &in = GetInput();
-  bool valid_dimensions = in.width > 0 && in.height > 0;
-  bool valid_size = in.pixels.size() == static_cast<size_t>(in.width) * static_cast<size_t>(in.height);
-  return valid_dimensions && valid_size;
+bool BinaryConvexHullSEQ::ValidationImpl() {
+  const auto &input = GetInput();
+  return input.width > 0 && input.height > 0 && !input.data.empty();
 }
 
-bool ParamonovINullBinaryImageSeq::PreProcessingImpl() {
-  work_image_ = GetInput();
-  BinarizeImage();
+bool BinaryConvexHullSEQ::PreProcessingImpl() {
+  GetOutput().clear();
   return true;
 }
 
-bool ParamonovINullBinaryImageSeq::RunImpl() {
-  ExtractComponents();
+bool BinaryConvexHullSEQ::RunImpl() {
+  const int width = GetInput().width;
+  const int height = GetInput().height;
+  const auto &image = GetInput().data;
+  const size_t image_size = static_cast<size_t>(width) * static_cast<size_t>(height);
 
-  work_image_.convex_hulls.clear();
-  work_image_.convex_hulls.reserve(work_image_.components.size());
+  std::vector<int> labels(image_size, 0);
+  int label_counter = 0;
 
-  for (const auto &component : work_image_.components) {
-    if (component.empty()) {
-      continue;
-    }
-    if (component.size() <= 2) {
-      work_image_.convex_hulls.push_back(component);
-    } else {
-      work_image_.convex_hulls.push_back(ComputeConvexHull(component));
-    }
-  }
-
-  GetOutput() = work_image_;
-  return true;
-}
-
-bool ParamonovINullBinaryImageSeq::PostProcessingImpl() {
-  return true;
-}
-
-size_t ParamonovINullBinaryImageSeq::GetIndex(int x, int y, int width) {
-  return (static_cast<size_t>(y) * static_cast<size_t>(width)) + static_cast<size_t>(x);
-}
-
-void ParamonovINullBinaryImageSeq::BinarizeImage() {
-  for (auto &pixel : work_image_.pixels) {
-    pixel = IsForegroundPixel(pixel) ? static_cast<uint8_t>(255) : static_cast<uint8_t>(0);
-  }
-}
-
-void ParamonovINullBinaryImageSeq::ExploreComponent(int start_col, int start_row, int width, int height,
-                                                    std::vector<bool> &visited, std::vector<Point> &component) {
-  std::queue<Point> queue;
-  queue.emplace(start_col, start_row);
-  visited[GetIndex(start_col, start_row, width)] = true;
-
-  while (!queue.empty()) {
-    Point current = queue.front();
-    queue.pop();
-    component.push_back(current);
-
-    for (auto [dx, dy] : kNeighborOffsets) {
-      int next_x = current.x + dx;
-      int next_y = current.y + dy;
-
-      if (!IsValidCoordinate(next_x, next_y, width, height)) {
-        continue;
-      }
-
-      size_t next_idx = GetIndex(next_x, next_y, width);
-      if (visited[next_idx] || work_image_.pixels[next_idx] == 0) {
-        continue;
-      }
-
-      visited[next_idx] = true;
-      queue.emplace(next_x, next_y);
-    }
-  }
-}
-
-void ParamonovINullBinaryImageSeq::ExtractComponents() {
-  int width = work_image_.width;
-  int height = work_image_.height;
-
-  std::vector<bool> visited(static_cast<size_t>(width) * static_cast<size_t>(height), false);
-  work_image_.components.clear();
+  // Clear output and reserve some space
+  auto &output = GetOutput();
+  output.clear();
+  output.reserve(10);  // Reserve space for expected number of components
 
   for (int row = 0; row < height; ++row) {
     for (int col = 0; col < width; ++col) {
-      size_t idx = GetIndex(col, row, width);
-      if (work_image_.pixels[idx] == 0 || visited[idx]) {
-        continue;
-      }
+      const size_t index = (static_cast<size_t>(row) * static_cast<size_t>(width)) + static_cast<size_t>(col);
+      if (image[index] != 0 && labels[index] == 0) {
+        ++label_counter;
+        std::vector<Point> component_points;
 
-      std::vector<Point> component;
-      ExploreComponent(col, row, width, height, visited, component);
+        ProcessComponent(image, width, height, col, row, label_counter, labels, component_points);
 
-      if (!component.empty()) {
-        work_image_.components.push_back(std::move(component));
+        if (!component_points.empty()) {
+          std::vector<Point> hull;
+          BuildConvexHull(component_points, hull);
+          output.push_back(std::move(hull));
+        }
       }
     }
   }
+  return true;
 }
 
-std::vector<Point> ParamonovINullBinaryImageSeq::ComputeConvexHull(const std::vector<Point> &points) {
-  if (points.size() <= 2) {
-    return points;
-  }
-
-  std::vector<Point> sorted_points = points;
-  std::ranges::sort(sorted_points,
-                    [](const Point &a, const Point &b) { return (a.x != b.x) ? (a.x < b.x) : (a.y < b.y); });
-
-  auto [first_duplicate, last_duplicate] = std::ranges::unique(sorted_points);
-  sorted_points.erase(first_duplicate, last_duplicate);
-
-  if (sorted_points.size() <= 2) {
-    return sorted_points;
-  }
-
-  std::vector<Point> lower_hull;
-  std::vector<Point> upper_hull;
-  lower_hull.reserve(sorted_points.size());
-  upper_hull.reserve(sorted_points.size());
-
-  // Build lower part of hull
-  for (const auto &point : sorted_points) {
-    while (lower_hull.size() >= 2 &&
-           ComputeCrossProduct(lower_hull[lower_hull.size() - 2], lower_hull.back(), point) <= 0) {
-      lower_hull.pop_back();
-    }
-    lower_hull.push_back(point);
-  }
-
-  // Build upper part of hull
-  for (const auto &point : std::ranges::reverse_view(sorted_points)) {
-    while (upper_hull.size() >= 2 &&
-           ComputeCrossProduct(upper_hull[upper_hull.size() - 2], upper_hull.back(), point) <= 0) {
-      upper_hull.pop_back();
-    }
-    upper_hull.push_back(point);
-  }
-
-  // Combine both parts (remove duplicate endpoints)
-  lower_hull.pop_back();
-  upper_hull.pop_back();
-  lower_hull.insert(lower_hull.end(), upper_hull.begin(), upper_hull.end());
-
-  return lower_hull;
+bool BinaryConvexHullSEQ::PostProcessingImpl() {
+  return true;
 }
 
 }  // namespace paramonov_i_null_binary_image
