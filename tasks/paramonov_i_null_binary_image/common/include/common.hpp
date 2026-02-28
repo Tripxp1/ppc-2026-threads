@@ -1,28 +1,45 @@
 #pragma once
 
 #include <cstdint>
+#include <string>
 #include <tuple>
 #include <vector>
 
 #include "task/include/task.hpp"
 
-namespace paramonov_i_null_binary_image {
+namespace paramonov_i_null_binary_image_seq {
 
 struct Point {
-  int x, y;
+  int x{0};
+  int y{0};
+
+  Point() = default;
+  Point(int px, int py) : x(px), y(py) {}
+
+  bool operator==(const Point &other) const {
+    return x == other.x && y == other.y;
+  }
+
+  bool operator!=(const Point &other) const {
+    return !(*this == other);
+  }
+
   bool operator<(const Point &other) const {
-    return std::tie(x, y) < std::tie(other.x, other.y);
+    return (x < other.x) || (x == other.x && y < other.y);
   }
 };
 
-struct ImageData {
-  std::vector<uint8_t> data;
-  int width = 0;
-  int height = 0;
+struct BinaryImage {
+  int width{0};
+  int height{0};
+  std::vector<uint8_t> pixels;
+  std::vector<std::vector<Point>> components;
+  std::vector<std::vector<Point>> convex_hulls;
 };
 
-using InType = ImageData;
-using OutType = std::vector<std::vector<Point>>;
+using InType = BinaryImage;
+using OutType = BinaryImage;
+using TestType = std::tuple<int, std::string>;
 using BaseTask = ppc::task::Task<InType, OutType>;
 
-}  // namespace paramonov_i_null_binary_image
+}  // namespace paramonov_i_null_binary_image_seq

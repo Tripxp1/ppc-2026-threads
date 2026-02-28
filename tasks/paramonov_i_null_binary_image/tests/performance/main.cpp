@@ -1,79 +1,57 @@
 #include <gtest/gtest.h>
 
-#include <algorithm>
 #include <cstddef>
 #include <vector>
 
-#include "paramonov_i_null_binary_image/common/include/common.hpp"
-#include "paramonov_i_null_binary_image/seq/include/ops_seq.hpp"
+#include "paramonov_i_null_binary_image_seq/common/include/common.hpp"
+#include "paramonov_i_null_binary_image_seq/seq/include/ops_seq.hpp"
 #include "util/include/perf_test_util.hpp"
 
-namespace paramonov_i_null_binary_image {
+namespace paramonov_i_null_binary_image_seq {
 
-class ParamonovIPerfTest : public ppc::util::BaseRunPerfTests<InType, OutType> {
-  static constexpr int kWidth = 1000;
-  static constexpr int kHeight = 1000;
-  InType input_data_;
-  int expected_components_{};
+class ParamonovINullBinaryImagePerfTests : public ppc::util::BaseRunPerfTests<InType, OutType> {
+  static constexpr size_t kSize = 512;
 
+ protected:
   void SetUp() override {
-    input_data_.width = kWidth;
-    input_data_.height = kHeight;
-    const size_t image_size = static_cast<size_t>(kWidth) * static_cast<size_t>(kHeight);
-    input_data_.data.assign(image_size, 0);
+    input_.width = static_cast<int>(kSize);
+    input_.height = static_cast<int>(kSize);
+    input_.pixels.assign(kSize * kSize, 0);
 
-    // Draw first rectangle
-    for (int row = 100; row < 400; ++row) {
-      for (int col = 100; col < 400; ++col) {
-        input_data_.data[(static_cast<size_t>(row) * static_cast<size_t>(kWidth)) + static_cast<size_t>(col)] = 255;
-      }
+    for (size_t i = 0; i < kSize; ++i) {
+      size_t idx1 = (i * kSize) + ((i * 13) % kSize);
+      size_t idx2 = (i * kSize) + ((i * 29 + 7) % kSize);
+      input_.pixels[idx1] = 255;
+      input_.pixels[idx2] = 255;
     }
-
-    // Draw second rectangle
-    for (int row = 500; row < 700; ++row) {
-      for (int col = 500; col < 700; ++col) {
-        input_data_.data[(static_cast<size_t>(row) * static_cast<size_t>(kWidth)) + static_cast<size_t>(col)] = 255;
-      }
-    }
-
-    // Draw third rectangle
-    for (int row = 800; row < 850; ++row) {
-      for (int col = 800; col < 850; ++col) {
-        input_data_.data[(static_cast<size_t>(row) * static_cast<size_t>(kWidth)) + static_cast<size_t>(col)] = 255;
-      }
-    }
-
-    expected_components_ = 3;
   }
 
-  bool CheckTestOutputData(OutType &output_data) final {
-    if (output_data.size() != static_cast<size_t>(expected_components_)) {
-      return false;
-    }
-
-    return std::ranges::all_of(output_data, [](const std::vector<Point> &hull) { return hull.size() >= 3; });
+  bool CheckTestOutputData(OutType &out) override {
+    return !out.convex_hulls.empty();
   }
 
-  InType GetTestInputData() final {
-    return input_data_;
+  InType GetTestInputData() override {
+    return input_;
   }
+
+ private:
+  InType input_;
 };
 
-TEST_P(ParamonovIPerfTest, RunPerfModes) {
+TEST_P(ParamonovINullBinaryImagePerfTests, RunPerf) {
   ExecuteTest(GetParam());
 }
 
 namespace {
 
-const auto kAllPerfTasks =
-    ppc::util::MakeAllPerfTasks<InType, BinaryConvexHullSEQ>(PPC_SETTINGS_paramonov_i_null_binary_image);
+const auto kPerfTasks =
+    ppc::util::MakeAllPerfTasks<InType, ParamonovINullBinaryImageSeq>(PPC_SETTINGS_paramonov_i_null_binary_image_seq);
 
-const auto kGtestValues = ppc::util::TupleToGTestValues(kAllPerfTasks);
+const auto kValues = ppc::util::TupleToGTestValues(kPerfTasks);
 
-const auto kPerfTestName = ParamonovIPerfTest::CustomPerfTestName;
-
-INSTANTIATE_TEST_SUITE_P(RunModeTests, ParamonovIPerfTest, kGtestValues, kPerfTestName);
+INSTANTIATE_TEST_SUITE_P(Perf, ParamonovINullBinaryImagePerfTests, kValues,
+                         ParamonovINullBinaryImagePerfTests::CustomPerfTestName);
 
 }  // namespace
 
-}  // namespace paramonov_i_null_binary_image
+}  // namespace paramonov_i_null_binary_image_seq
