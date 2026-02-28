@@ -3,18 +3,18 @@
 #include <cstddef>
 #include <vector>
 
-#include "paramonov_i_null_binary_image_seq/common/include/common.hpp"
+#include "shkenev_i_constr_hull_for_binary_image_seq/common/include/common.hpp"
 #include "task/include/task.hpp"
 
-namespace paramonov_i_null_binary_image_seq {
+namespace shkenev_i_constr_hull_for_binary_image_seq {
 
-class ParamonovINullBinaryImageSeq : public BaseTask {
+class ShkenevIConstrHullSeq : public BaseTask {
  public:
   static constexpr ppc::task::TypeOfTask GetStaticTypeOfTask() {
     return ppc::task::TypeOfTask::kSEQ;
   }
 
-  explicit ParamonovINullBinaryImageSeq(const InType &in);
+  explicit ShkenevIConstrHullSeq(const InType &in);
 
  private:
   bool ValidationImpl() override;
@@ -32,4 +32,4 @@ class ParamonovINullBinaryImageSeq : public BaseTask {
   BinaryImage work_;
 };
 
-}  // namespace paramonov_i_null_binary_image_seq
+}  // namespace shkenev_i_constr_hull_for_binary_image_seq

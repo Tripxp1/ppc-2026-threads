@@ -9,11 +9,11 @@
 #include <tuple>
 #include <vector>
 
-#include "paramonov_i_null_binary_image_seq/common/include/common.hpp"
-#include "paramonov_i_null_binary_image_seq/seq/include/ops_seq.hpp"
+#include "shkenev_i_constr_hull_for_binary_image_seq/common/include/common.hpp"
+#include "shkenev_i_constr_hull_for_binary_image_seq/seq/include/ops_seq.hpp"
 #include "util/include/func_test_util.hpp"
 
-namespace paramonov_i_null_binary_image_seq {
+namespace shkenev_i_constr_hull_for_binary_image_seq {
 
 namespace {
 
@@ -121,7 +121,7 @@ bool Compare(const std::vector<std::vector<Point>> &a, const std::vector<std::ve
 
 }  // namespace
 
-class ParamonovINullBinaryImageFuncTests : public ppc::util::BaseRunFuncTests<InType, OutType, TestType> {
+class ShkenevIConstrHullFuncTests : public ppc::util::BaseRunFuncTests<InType, OutType, TestType> {
  public:
   static std::string PrintTestParam(const TestType &p) {
     return std::to_string(std::get<0>(p)) + "_" + std::get<1>(p);
@@ -144,7 +144,7 @@ class ParamonovINullBinaryImageFuncTests : public ppc::util::BaseRunFuncTests<In
 
 namespace {
 
-TEST_P(ParamonovINullBinaryImageFuncTests, Test) {
+TEST_P(ShkenevIConstrHullFuncTests, Test) {
   ExecuteTest(GetParam());
 }
 
@@ -152,14 +152,14 @@ const std::array<TestType, 5> kParams = {std::make_tuple(0, "one"), std::make_tu
                                          std::make_tuple(2, "three"), std::make_tuple(3, "four"),
                                          std::make_tuple(4, "fivee")};
 
-const auto kTasks = ppc::util::AddFuncTask<ParamonovINullBinaryImageSeq, InType>(
-    kParams, PPC_SETTINGS_paramonov_i_null_binary_image_seq);
+const auto kTasks = ppc::util::AddFuncTask<ShkenevIConstrHullSeq, InType>(
+    kParams, PPC_SETTINGS_shkenev_i_constr_hull_for_binary_image_seq);
 
 const auto kValues = ppc::util::ExpandToValues(kTasks);
-const auto kName = ParamonovINullBinaryImageFuncTests::PrintFuncTestName<ParamonovINullBinaryImageFuncTests>;
+const auto kName = ShkenevIConstrHullFuncTests::PrintFuncTestName<ShkenevIConstrHullFuncTests>;
 
-INSTANTIATE_TEST_SUITE_P(ParamonovINullBinaryImage, ParamonovINullBinaryImageFuncTests, kValues, kName);
+INSTANTIATE_TEST_SUITE_P(ShkenevIConstrHull, ShkenevIConstrHullFuncTests, kValues, kName);
 
 }  // namespace
 
-}  // namespace paramonov_i_null_binary_image_seq
+}  // namespace shkenev_i_constr_hull_for_binary_image_seq

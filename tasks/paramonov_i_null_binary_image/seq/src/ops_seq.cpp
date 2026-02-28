@@ -1,4 +1,4 @@
-#include "paramonov_i_null_binary_image_seq/seq/include/ops_seq.hpp"
+#include "shkenev_i_constr_hull_for_binary_image_seq/seq/include/ops_seq.hpp"
 
 #include <algorithm>
 #include <array>
@@ -9,9 +9,9 @@
 #include <utility>
 #include <vector>
 
-#include "paramonov_i_null_binary_image_seq/common/include/common.hpp"
+#include "shkenev_i_constr_hull_for_binary_image_seq/common/include/common.hpp"
 
-namespace paramonov_i_null_binary_image_seq {
+namespace shkenev_i_constr_hull_for_binary_image_seq {
 
 namespace {
 
@@ -37,25 +37,25 @@ bool IsInBounds(int x, int y, int width, int height) {
 
 }  // namespace
 
-ParamonovINullBinaryImageSeq::ParamonovINullBinaryImageSeq(const InType &in) : work_(in) {
+ShkenevIConstrHullSeq::ShkenevIConstrHullSeq(const InType &in) : work_(in) {
   SetTypeOfTask(GetStaticTypeOfTask());
   GetInput() = in;
 }
 
-bool ParamonovINullBinaryImageSeq::ValidationImpl() {
+bool ShkenevIConstrHullSeq::ValidationImpl() {
   const auto &in = GetInput();
   bool dims = in.width > 0 && in.height > 0;
   bool size = in.pixels.size() == static_cast<size_t>(in.width) * static_cast<size_t>(in.height);
   return dims && size;
 }
 
-bool ParamonovINullBinaryImageSeq::PreProcessingImpl() {
+bool ShkenevIConstrHullSeq::PreProcessingImpl() {
   work_ = GetInput();
   ThresholdImage();
   return true;
 }
 
-bool ParamonovINullBinaryImageSeq::RunImpl() {
+bool ShkenevIConstrHullSeq::RunImpl() {
   FindComponents();
 
   work_.convex_hulls.clear();
@@ -76,22 +76,22 @@ bool ParamonovINullBinaryImageSeq::RunImpl() {
   return true;
 }
 
-bool ParamonovINullBinaryImageSeq::PostProcessingImpl() {
+bool ShkenevIConstrHullSeq::PostProcessingImpl() {
   return true;
 }
 
-size_t ParamonovINullBinaryImageSeq::Index(int x, int y, int width) {
+size_t ShkenevIConstrHullSeq::Index(int x, int y, int width) {
   return (static_cast<size_t>(y) * static_cast<size_t>(width)) + static_cast<size_t>(x);
 }
 
-void ParamonovINullBinaryImageSeq::ThresholdImage() {
+void ShkenevIConstrHullSeq::ThresholdImage() {
   for (auto &p : work_.pixels) {
     p = IsForeground(p) ? static_cast<uint8_t>(255) : static_cast<uint8_t>(0);
   }
 }
 
-void ParamonovINullBinaryImageSeq::ExploreComponent(int start_col, int start_row, int width, int height,
-                                                    std::vector<bool> &visited, std::vector<Point> &component) {
+void ShkenevIConstrHullSeq::ExploreComponent(int start_col, int start_row, int width, int height,
+                                             std::vector<bool> &visited, std::vector<Point> &component) {
   std::queue<Point> queue;
   queue.emplace(start_col, start_row);
   visited[Index(start_col, start_row, width)] = true;
@@ -120,7 +120,7 @@ void ParamonovINullBinaryImageSeq::ExploreComponent(int start_col, int start_row
   }
 }
 
-void ParamonovINullBinaryImageSeq::FindComponents() {
+void ShkenevIConstrHullSeq::FindComponents() {
   int width = work_.width;
   int height = work_.height;
 
@@ -144,7 +144,7 @@ void ParamonovINullBinaryImageSeq::FindComponents() {
   }
 }
 
-std::vector<Point> ParamonovINullBinaryImageSeq::BuildHull(const std::vector<Point> &points) {
+std::vector<Point> ShkenevIConstrHullSeq::BuildHull(const std::vector<Point> &points) {
   if (points.size() <= 2) {
     return points;
   }
@@ -184,4 +184,4 @@ std::vector<Point> ParamonovINullBinaryImageSeq::BuildHull(const std::vector<Poi
   return lower;
 }
 
-}  // namespace paramonov_i_null_binary_image_seq
+}  // namespace shkenev_i_constr_hull_for_binary_image_seq
