@@ -11,20 +11,19 @@ namespace paramonov_i_null_binary_image_seq {
 
 class ParamonovINullBinaryImagePerfTests
     : public ppc::util::BaseRunPerfTests<InType, OutType> {
-  static constexpr size_t kImageSize = 512;
+  static constexpr size_t kSize = 512;
 
 protected:
   void SetUp() override {
-    test_image_.width = static_cast<int>(kImageSize);
-    test_image_.height = static_cast<int>(kImageSize);
-    test_image_.pixels.assign(kImageSize * kImageSize, 0);
+    input_.width = static_cast<int>(kSize);
+    input_.height = static_cast<int>(kSize);
+    input_.pixels.assign(kSize * kSize, 0);
 
-    // Generate random foreground pixels
-    for (size_t i = 0; i < kImageSize; ++i) {
-      size_t idx1 = (i * kImageSize) + ((i * 13) % kImageSize);
-      size_t idx2 = (i * kImageSize) + ((i * 29 + 7) % kImageSize);
-      test_image_.pixels[idx1] = 255;
-      test_image_.pixels[idx2] = 255;
+    for (size_t i = 0; i < kSize; ++i) {
+      size_t idx1 = (i * kSize) + ((i * 13) % kSize);
+      size_t idx2 = (i * kSize) + ((i * 29 + 7) % kSize);
+      input_.pixels[idx1] = 255;
+      input_.pixels[idx2] = 255;
     }
   }
 
@@ -32,10 +31,10 @@ protected:
     return !out.convex_hulls.empty();
   }
 
-  InType GetTestInputData() override { return test_image_; }
+  InType GetTestInputData() override { return input_; }
 
 private:
-  InType test_image_;
+  InType input_;
 };
 
 TEST_P(ParamonovINullBinaryImagePerfTests, RunPerf) { ExecuteTest(GetParam()); }
@@ -49,7 +48,7 @@ const auto kPerfTasks =
 const auto kValues = ppc::util::TupleToGTestValues(kPerfTasks);
 
 INSTANTIATE_TEST_SUITE_P(
-    PerformanceTests, ParamonovINullBinaryImagePerfTests, kValues,
+    Perf, ParamonovINullBinaryImagePerfTests, kValues,
     ParamonovINullBinaryImagePerfTests::CustomPerfTestName);
 
 } // namespace
