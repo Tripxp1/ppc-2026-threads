@@ -26,12 +26,14 @@ BinaryImage CreateImage(int width, int height, uint8_t value = 0) {
   BinaryImage img;
   img.width = width;
   img.height = height;
-  img.pixels.assign(static_cast<size_t>(width) * static_cast<size_t>(height), value);
+  img.pixels.assign(static_cast<size_t>(width) * static_cast<size_t>(height),
+                    value);
   return img;
 }
 
 void SetPixelValue(BinaryImage &img, int col, int row, uint8_t value) {
-  size_t idx = (static_cast<size_t>(row) * static_cast<size_t>(img.width)) + static_cast<size_t>(col);
+  size_t idx = (static_cast<size_t>(row) * static_cast<size_t>(img.width)) +
+               static_cast<size_t>(col);
   img.pixels[idx] = value;
 }
 
@@ -89,10 +91,9 @@ TestCase CreateTestCase5() {
 }
 
 const std::vector<TestCase> &GetAllTestCases() {
-  static std::vector<TestCase> cases = {
-    CreateTestCase1(), CreateTestCase2(), CreateTestCase3(),
-    CreateTestCase4(), CreateTestCase5()
-  };
+  static std::vector<TestCase> cases = {CreateTestCase1(), CreateTestCase2(),
+                                        CreateTestCase3(), CreateTestCase4(),
+                                        CreateTestCase5()};
   return cases;
 }
 
@@ -110,7 +111,8 @@ std::vector<Point> NormalizeHull(const std::vector<Point> &hull) {
   return result;
 }
 
-std::vector<std::vector<Point>> NormalizeAllHulls(const std::vector<std::vector<Point>> &hulls) {
+std::vector<std::vector<Point>>
+NormalizeAllHulls(const std::vector<std::vector<Point>> &hulls) {
   std::vector<std::vector<Point>> result;
   result.reserve(hulls.size());
   for (const auto &h : hulls) {
@@ -125,15 +127,16 @@ bool CompareHullSets(const std::vector<std::vector<Point>> &a,
   return NormalizeAllHulls(a) == NormalizeAllHulls(b);
 }
 
-}  // namespace
+} // namespace
 
-class ParamonovINullBinaryImageFuncTests : public ppc::util::BaseRunFuncTests<InType, OutType, TestType> {
- public:
+class ParamonovINullBinaryImageFuncTests
+    : public ppc::util::BaseRunFuncTests<InType, OutType, TestType> {
+public:
   static std::string FormatTestParam(const TestType &p) {
     return std::to_string(std::get<0>(p)) + "_" + std::get<1>(p);
   }
 
- protected:
+protected:
   bool CheckTestOutputData(OutType &out) override {
     auto param = std::get<2>(GetParam());
     int id = std::get<0>(param);
@@ -150,26 +153,25 @@ class ParamonovINullBinaryImageFuncTests : public ppc::util::BaseRunFuncTests<In
 
 namespace {
 
-TEST_P(ParamonovINullBinaryImageFuncTests, Test) {
-  ExecuteTest(GetParam());
-}
+TEST_P(ParamonovINullBinaryImageFuncTests, Test) { ExecuteTest(GetParam()); }
 
 const std::array<TestType, 5> kTestParams = {
-  std::make_tuple(0, "case1_single_pixel"),
-  std::make_tuple(1, "case2_two_pixels"),
-  std::make_tuple(2, "case3_horizontal_line"),
-  std::make_tuple(3, "case4_rectangle"),
-  std::make_tuple(4, "case5_diamond")
-};
+    std::make_tuple(0, "case1_single_pixel"),
+    std::make_tuple(1, "case2_two_pixels"),
+    std::make_tuple(2, "case3_horizontal_line"),
+    std::make_tuple(3, "case4_rectangle"), std::make_tuple(4, "case5_diamond")};
 
-const auto kTasks = ppc::util::AddFuncTask<ParamonovINullBinaryImageSeq, InType>(
-    kTestParams, PPC_SETTINGS_paramonov_i_null_binary_image_seq);
+const auto kTasks =
+    ppc::util::AddFuncTask<ParamonovINullBinaryImageSeq, InType>(
+        kTestParams, PPC_SETTINGS_paramonov_i_null_binary_image_seq);
 
 const auto kValues = ppc::util::ExpandToValues(kTasks);
-const auto kName = ParamonovINullBinaryImageFuncTests::PrintFuncTestName<ParamonovINullBinaryImageFuncTests>;
+const auto kName = ParamonovINullBinaryImageFuncTests::PrintFuncTestName<
+    ParamonovINullBinaryImageFuncTests>;
 
-INSTANTIATE_TEST_SUITE_P(ParamonovTests, ParamonovINullBinaryImageFuncTests, kValues, kName);
+INSTANTIATE_TEST_SUITE_P(ParamonovTests, ParamonovINullBinaryImageFuncTests,
+                         kValues, kName);
 
-}  // namespace
+} // namespace
 
-}  // namespace paramonov_i_null_binary_image_seq
+} // namespace paramonov_i_null_binary_image_seq
