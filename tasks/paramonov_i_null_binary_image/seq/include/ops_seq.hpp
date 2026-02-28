@@ -22,14 +22,14 @@ class ParamonovINullBinaryImageSeq : public BaseTask {
   bool RunImpl() override;
   bool PostProcessingImpl() override;
 
-  void ThresholdImage();
-  void FindComponents();
-  static std::vector<Point> BuildHull(const std::vector<Point> &points);
-  static size_t Index(int x, int y, int width);
-  void ExploreComponent(int start_col, int start_row, int width, int height, std::vector<bool> &visited,
-                        std::vector<Point> &component);
+  void BinarizeImage();
+  void ExtractComponents();
+  static std::vector<Point> ComputeConvexHull(const std::vector<Point> &points);
+  static size_t GetIndex(int x, int y, int width);
+  void ExploreComponent(int start_col, int start_row, int width, int height,
+                        std::vector<bool> &visited, std::vector<Point> &component);
 
-  BinaryImage work_;
+  BinaryImage work_image_;
 };
 
 }  // namespace paramonov_i_null_binary_image_seq
