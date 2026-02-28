@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <cstddef>
 #include <vector>
 
@@ -9,54 +10,70 @@
 
 namespace paramonov_v_bin_img_conv_hull {
 
-class ParamonovVBinImgConvHullPerfTests
-    : public ppc::util::BaseRunPerfTests<InType, OutType> {
-  static constexpr size_t kSize = 600;
+class ParamonovVPerfTest : public ppc::util::BaseRunPerfTests<InType, OutType> {
+  static constexpr int kWidth = 1000;
+  static constexpr int kHeight = 1000;
+  InType input_data_;
+  int expected_components_{};
 
-protected:
   void SetUp() override {
-    input_.width = static_cast<int>(kSize);
-    input_.height = static_cast<int>(kSize);
-    input_.pixels.assign(kSize * kSize, 0);
+    input_data_.width = kWidth;
+    input_data_.height = kHeight;
+    const size_t image_size = static_cast<size_t>(kWidth) * static_cast<size_t>(kHeight);
+    input_data_.data.assign(image_size, 0);
 
-    // Диагональные компоненты + псевдослучайные точки
-    for (size_t i = 0; i < kSize; ++i) {
-      size_t idx1 = (i * kSize) + i;
-      size_t idx2 = (i * kSize) + (kSize - i - 1);
-
-      input_.pixels[idx1] = 255;
-      input_.pixels[idx2] = 255;
-
-      if (i % 17 == 0) {
-        size_t extra = (i * kSize) + ((i * 37 + 11) % kSize);
-        input_.pixels[extra] = 255;
+    // Draw first rectangle
+    for (int row = 100; row < 400; ++row) {
+      for (int col = 100; col < 400; ++col) {
+        input_data_.data[(static_cast<size_t>(row) * static_cast<size_t>(kWidth)) + static_cast<size_t>(col)] = 255;
       }
     }
+
+    // Draw second rectangle
+    for (int row = 500; row < 700; ++row) {
+      for (int col = 500; col < 700; ++col) {
+        input_data_.data[(static_cast<size_t>(row) * static_cast<size_t>(kWidth)) + static_cast<size_t>(col)] = 255;
+      }
+    }
+
+    // Draw third rectangle
+    for (int row = 800; row < 850; ++row) {
+      for (int col = 800; col < 850; ++col) {
+        input_data_.data[(static_cast<size_t>(row) * static_cast<size_t>(kWidth)) + static_cast<size_t>(col)] = 255;
+      }
+    }
+
+    expected_components_ = 3;
   }
 
-  bool CheckTestOutputData(OutType &out) override {
-    return !out.convex_hulls.empty();
+  bool CheckTestOutputData(OutType &output_data) final {
+    if (output_data.size() != static_cast<size_t>(expected_components_)) {
+      return false;
+    }
+
+    return std::ranges::all_of(output_data, [](const std::vector<Point> &hull) { return hull.size() >= 3; });
   }
 
-  InType GetTestInputData() override { return input_; }
-
-private:
-  InType input_;
+  InType GetTestInputData() final {
+    return input_data_;
+  }
 };
 
-TEST_P(ParamonovVBinImgConvHullPerfTests, RunPerf) { ExecuteTest(GetParam()); }
+TEST_P(ParamonovVPerfTest, RunPerfModes) {
+  ExecuteTest(GetParam());
+}
 
 namespace {
 
-const auto kPerfTasks =
-    ppc::util::MakeAllPerfTasks<InType, ParamonovVBinImgConvHullSeq>(
-        PPC_SETTINGS_paramonov_v_bin_img_conv_hull);
+const auto kAllPerfTasks =
+    ppc::util::MakeAllPerfTasks<InType, BinaryConvexHullSEQ>(PPC_SETTINGS_paramonov_v_bin_img_conv_hull);
 
-const auto kValues = ppc::util::TupleToGTestValues(kPerfTasks);
+const auto kGtestValues = ppc::util::TupleToGTestValues(kAllPerfTasks);
 
-INSTANTIATE_TEST_SUITE_P(Perf, ParamonovVBinImgConvHullPerfTests, kValues,
-                         ParamonovVBinImgConvHullPerfTests::CustomPerfTestName);
+const auto kPerfTestName = ParamonovVPerfTest::CustomPerfTestName;
 
-} // namespace
+INSTANTIATE_TEST_SUITE_P(RunModeTests, ParamonovVPerfTest, kGtestValues, kPerfTestName);
 
-} // namespace paramonov_v_bin_img_conv_hull
+}  // namespace
+
+}  // namespace paramonov_v_bin_img_conv_hull

@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cstdint>
-#include <string>
 #include <tuple>
 #include <vector>
 
@@ -10,35 +9,20 @@
 namespace paramonov_v_bin_img_conv_hull {
 
 struct Point {
-  int x{0};
-  int y{0};
-
-  Point() = default;
-  Point(int px, int py) : x(px), y(py) {}
-
-  bool operator==(const Point &oth) const { return x == oth.x && y == oth.y; }
-
-  bool operator!=(const Point &oth) const { return !(*this == oth); }
-
-  bool operator<(const Point &oth) const {
-    if (x == oth.x) {
-      return y < oth.y;
-    }
-    return x < oth.x;
+  int x, y;
+  bool operator<(const Point &other) const {
+    return std::tie(x, y) < std::tie(other.x, other.y);
   }
 };
 
-struct BinaryImage {
-  int width{0};
-  int height{0};
-  std::vector<uint8_t> pixels;
-  std::vector<std::vector<Point>> components;
-  std::vector<std::vector<Point>> convex_hulls;
+struct ImageData {
+  std::vector<uint8_t> data;
+  int width = 0;
+  int height = 0;
 };
 
-using InType = BinaryImage;
-using OutType = BinaryImage;
-using TestType = std::tuple<int, std::string>;
+using InType = ImageData;
+using OutType = std::vector<std::vector<Point>>;
 using BaseTask = ppc::task::Task<InType, OutType>;
 
-} // namespace paramonov_v_bin_img_conv_hull
+}  // namespace paramonov_v_bin_img_conv_hull

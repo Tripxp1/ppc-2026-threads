@@ -1,36 +1,21 @@
 #pragma once
 
-#include <cstddef>
-#include <vector>
-
 #include "paramonov_v_bin_img_conv_hull/common/include/common.hpp"
 #include "task/include/task.hpp"
 
 namespace paramonov_v_bin_img_conv_hull {
 
-class ParamonovVBinImgConvHullSeq : public BaseTask {
-public:
+class BinaryConvexHullSEQ : public BaseTask {
+ public:
   static constexpr ppc::task::TypeOfTask GetStaticTypeOfTask() {
     return ppc::task::TypeOfTask::kSEQ;
   }
+  explicit BinaryConvexHullSEQ(const InType &in);
 
-  explicit ParamonovVBinImgConvHullSeq(const InType &in);
-
-private:
   bool ValidationImpl() override;
   bool PreProcessingImpl() override;
   bool RunImpl() override;
   bool PostProcessingImpl() override;
-
-  void ThresholdImage();
-  void FindComponents();
-  static std::vector<Point> BuildHull(const std::vector<Point> &points);
-  static size_t Index(int col, int row, int width);
-  void ExploreComponent(int start_col, int start_row, int width, int height,
-                        std::vector<bool> &visited,
-                        std::vector<Point> &component);
-
-  BinaryImage w_;
 };
 
-} // namespace paramonov_v_bin_img_conv_hull
+}  // namespace paramonov_v_bin_img_conv_hull
