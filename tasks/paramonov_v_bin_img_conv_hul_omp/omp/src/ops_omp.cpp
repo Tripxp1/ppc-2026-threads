@@ -6,13 +6,12 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
-#include <iterator>  // для std::back_inserter
+#include <iterator>
 #include <stack>
-#include <utility>  // для std::pair
+#include <utility>
 #include <vector>
 
-// Добавляем include для типов из common.hpp
-#include "paramonov_v_bin_img_conv_hul/common/include/common.hpp"
+#include "common.hpp"
 
 namespace paramonov_v_bin_img_conv_hul_omp {
 
@@ -106,10 +105,8 @@ void ConvexHullOMP::ExtractConnectedComponents() {
 
   std::vector<bool> visited(total_pixels, false);
 
-  // Вектор для хранения всех компонент (каждый поток будет собирать свои)
   std::vector<std::vector<PixelPoint>> thread_components;
 
-// Используем критическую секцию для обнаружения новых компонент
 #pragma omp parallel
   {
 #pragma omp single
@@ -125,7 +122,6 @@ void ConvexHullOMP::ExtractConnectedComponents() {
       for (int col = 0; col < cols; ++col) {
         size_t idx = PixelIndex(row, col, cols);
 
-        // Критическая секция для проверки и маркировки visited
         bool need_process = false;
 #pragma omp critical
         {
@@ -148,7 +144,6 @@ void ConvexHullOMP::ExtractConnectedComponents() {
     }
   }
 
-  // Собираем результаты из всех потоков
   auto &output_hulls = GetOutput();
   for (auto &thread_hulls : thread_components) {
     output_hulls.insert(output_hulls.end(), std::make_move_iterator(thread_hulls.begin()),
@@ -166,10 +161,8 @@ std::vector<PixelPoint> ConvexHullOMP::ComputeConvexHull(const std::vector<Pixel
     return points;
   }
 
-  // Находим точку с наименьшими координатами
   auto lowest_point = *std::ranges::min_element(points, ComparePoints);
 
-  // Копируем и сортируем по полярному углу
   std::vector<PixelPoint> sorted_points;
   std::ranges::copy_if(points, std::back_inserter(sorted_points), [&lowest_point](const PixelPoint &p) {
     return (p.row != lowest_point.row) || (p.col != lowest_point.col);
@@ -187,7 +180,6 @@ std::vector<PixelPoint> ConvexHullOMP::ComputeConvexHull(const std::vector<Pixel
     return orient > 0;
   });
 
-  // Строим выпуклую оболочку
   std::vector<PixelPoint> hull;
   hull.push_back(lowest_point);
 
