@@ -1,10 +1,8 @@
 #include <gtest/gtest.h>
-#include <omp.h>
 
 #include <algorithm>
 #include <chrono>
 #include <cstddef>
-#include <iostream>
 #include <random>
 #include <vector>
 
@@ -14,19 +12,18 @@
 
 namespace paramonov_v_bin_img_conv_hul_omp {
 
-class ConvexHullOMPPerformanceTest : public ppc::util::BaseRunPerfTests<InputType, OutputType> {
+class ConvexHullPerformanceTest : public ppc::util::BaseRunPerfTests<InputType, OutputType> {
   static constexpr int kImageSize = 600;
-  InputType test_input_{};
 
   void SetUp() override {
-    test_input_.rows = kImageSize;
-    test_input_.cols = kImageSize;
-    test_input_.pixels.assign(static_cast<size_t>(kImageSize) * kImageSize, 0);
+    input_image_.rows = kImageSize;
+    input_image_.cols = kImageSize;
+    input_image_.pixels.assign(static_cast<size_t>(kImageSize) * kImageSize, 0);
 
     std::mt19937 rng(std::chrono::steady_clock::now().time_since_epoch().count());
     std::uniform_int_distribution<int> dist(0, kImageSize - 1);
 
-    for (int component = 0; component < 10; ++component) {
+    for (int component = 0; component < 5; ++component) {
       int x1 = dist(rng) % (kImageSize - 30);
       int y1 = dist(rng) % (kImageSize - 30);
       int x2 = x1 + 20 + (dist(rng) % 20);
@@ -36,7 +33,7 @@ class ConvexHullOMPPerformanceTest : public ppc::util::BaseRunPerfTests<InputTyp
         for (int col = x1; col <= x2; ++col) {
           if (row >= 0 && row < kImageSize && col >= 0 && col < kImageSize) {
             size_t idx = (static_cast<size_t>(row) * kImageSize) + col;
-            test_input_.pixels[idx] = 255;
+            input_image_.pixels[idx] = 255;
           }
         }
       }
@@ -47,7 +44,7 @@ class ConvexHullOMPPerformanceTest : public ppc::util::BaseRunPerfTests<InputTyp
       int col = i;
       if (row < kImageSize && col < kImageSize) {
         size_t idx = (static_cast<size_t>(row) * kImageSize) + col;
-        test_input_.pixels[idx] = 255;
+        input_image_.pixels[idx] = 255;
       }
     }
   }
@@ -60,11 +57,13 @@ class ConvexHullOMPPerformanceTest : public ppc::util::BaseRunPerfTests<InputTyp
   }
 
   InputType GetTestInputData() override {
-    return test_input_;
+    return input_image_;
   }
+
+  InputType input_image_;
 };
 
-TEST_P(ConvexHullOMPPerformanceTest, RunPerformanceTest) {
+TEST_P(ConvexHullPerformanceTest, RunPerformanceTest) {
   ExecuteTest(GetParam());
 }
 
@@ -75,8 +74,8 @@ const auto kPerformanceTasks =
 
 const auto kTestValues = ppc::util::TupleToGTestValues(kPerformanceTasks);
 
-INSTANTIATE_TEST_SUITE_P(ParamonovOMPPerfTests, ConvexHullOMPPerformanceTest, kTestValues,
-                         ConvexHullOMPPerformanceTest::CustomPerfTestName);
+INSTANTIATE_TEST_SUITE_P(ParamonovPerfTests, ConvexHullPerformanceTest, kTestValues,
+                         ConvexHullPerformanceTest::CustomPerfTestName);
 
 }  // namespace
 

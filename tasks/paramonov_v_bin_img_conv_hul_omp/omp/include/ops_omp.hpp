@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <utility>
 #include <vector>
 
 #include "paramonov_v_bin_img_conv_hul_omp/common/include/common.hpp"
@@ -16,10 +17,6 @@ class ConvexHullOMP : public HullTaskBase {
   }
 
   explicit ConvexHullOMP(const InputType &input);
-
-  // Методы для загрузки данных и получения результата
-  void LoadImage(const GrayImage &image);
-  [[nodiscard]] OutputType GetConvexHulls() const;
 
  private:
   bool ValidationImpl() override;
@@ -37,10 +34,14 @@ class ConvexHullOMP : public HullTaskBase {
   }
 
   void FloodFill(int start_row, int start_col, std::vector<bool> &visited, std::vector<PixelPoint> &component) const;
-  static bool AreAllPointsSame(const std::vector<PixelPoint> &points);
+
+  static void FindStartPoints(const std::vector<uint8_t> &pixels, int rows, int cols, std::vector<bool> &visited,
+                              std::vector<std::pair<int, int>> &start_points);
+
+  static void ProcessComponent(int start_row, int start_col, int rows, int cols, size_t total_pixels,
+                               const std::vector<uint8_t> &pixels, std::vector<std::vector<PixelPoint>> &components);
 
   InputType working_image_;
-  bool external_data_provided_ = false;
 };
 
 }  // namespace paramonov_v_bin_img_conv_hul_omp
