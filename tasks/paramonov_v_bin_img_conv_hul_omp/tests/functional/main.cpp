@@ -207,8 +207,8 @@ const std::array<TestCase, 8> kTestCases = {
 
      std::make_tuple(CreateTestImage(10, 10), std::vector<std::vector<PixelPoint>>{}, "empty_image")}};
 
-const auto kTestTasksList =
-    ppc::util::AddFuncTask<ConvexHullOMP, InputType>(kTestCases, PPC_SETTINGS_paramonov_v_bin_img_conv_hul_omp);
+const auto kTestTasksList = std::tuple_cat(
+    ppc::util::AddFuncTask<ConvexHullOMP, InputType>(kTestCases, PPC_SETTINGS_paramonov_v_bin_img_conv_hul_omp));
 
 const auto kGtestValues = ppc::util::ExpandToValues(kTestTasksList);
 

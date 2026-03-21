@@ -6,9 +6,9 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
-#include <iterator>
+#include <iterator>  // для std::back_inserter
 #include <stack>
-#include <utility>
+#include <utility>  // для std::pair
 #include <vector>
 
 #include "paramonov_v_bin_img_conv_hul_omp/common/include/common.hpp"
@@ -84,9 +84,7 @@ void ConvexHullOMP::FloodFill(int start_row, int start_col, std::vector<bool> &v
 
     component.push_back(current);
 
-    for (const auto &neighbor : kNeighbors) {
-      int dr = neighbor.first;
-      int dc = neighbor.second;
+    for (const auto &[dr, dc] : kNeighbors) {
       int next_row = current.row + dr;
       int next_col = current.col + dc;
 
@@ -135,9 +133,7 @@ void ConvexHullOMP::ProcessComponent(int start_row, int start_col, int rows, int
     pixel_stack.pop();
     component.push_back(current);
 
-    for (const auto &neighbor : kNeighbors) {
-      int dr = neighbor.first;
-      int dc = neighbor.second;
+    for (const auto &[dr, dc] : kNeighbors) {
       int next_row = current.row + dr;
       int next_col = current.col + dc;
 

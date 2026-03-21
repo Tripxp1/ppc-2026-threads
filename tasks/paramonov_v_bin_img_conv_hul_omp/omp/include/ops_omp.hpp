@@ -1,9 +1,9 @@
 #pragma once
 
-#include <cstddef>
-#include <cstdint>
-#include <utility>
-#include <vector>
+#include <cstddef>  // для size_t
+#include <cstdint>  // для uint8_t, int64_t
+#include <utility>  // для std::pair
+#include <vector>   // для std::vector
 
 #include "paramonov_v_bin_img_conv_hul_omp/common/include/common.hpp"
 #include "task/include/task.hpp"
@@ -45,5 +45,3 @@ class ConvexHullOMP : public HullTaskBase {
 };
 
 }  // namespace paramonov_v_bin_img_conv_hul_omp
-
-PPC_DEFINE_TASK(paramonov_v_bin_img_conv_hul_omp::ConvexHullOMP);
