@@ -45,3 +45,5 @@ class ConvexHullOMP : public HullTaskBase {
 };
 
 }  // namespace paramonov_v_bin_img_conv_hul_omp
+
+PPC_DEFINE_TASK(paramonov_v_bin_img_conv_hul_omp::ConvexHullOMP);
