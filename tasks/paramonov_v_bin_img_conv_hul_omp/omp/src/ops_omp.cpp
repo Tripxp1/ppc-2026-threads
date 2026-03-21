@@ -105,17 +105,18 @@ void ConvexHullOMP::ExtractConnectedComponents() {
 
   std::vector<bool> visited(total_pixels, false);
 
-  std::vector<std::vector<PixelPoint>> thread_components;
+  // Вектор для хранения оболочек каждого потока
+  std::vector<std::vector<PixelPoint>> thread_hulls;
 
 #pragma omp parallel
   {
 #pragma omp single
     {
-      thread_components.resize(omp_get_num_threads());
+      thread_hulls.resize(omp_get_num_threads());
     }
 
     int thread_id = omp_get_thread_num();
-    auto &local_components = thread_components[thread_id];
+    auto &local_hulls = thread_hulls[thread_id];
 
 #pragma omp for schedule(dynamic, 64)
     for (int row = 0; row < rows; ++row) {
@@ -137,17 +138,18 @@ void ConvexHullOMP::ExtractConnectedComponents() {
 
           if (!component.empty()) {
             std::vector<PixelPoint> hull = ComputeConvexHull(component);
-            local_components.push_back(std::move(hull));
+            local_hulls.push_back(std::move(hull));
           }
         }
       }
     }
   }
 
+  // Собираем результаты из всех потоков
   auto &output_hulls = GetOutput();
-  for (auto &thread_hulls : thread_components) {
-    output_hulls.insert(output_hulls.end(), std::make_move_iterator(thread_hulls.begin()),
-                        std::make_move_iterator(thread_hulls.end()));
+  for (auto &thread_hull : thread_hulls) {
+    output_hulls.insert(output_hulls.end(), std::make_move_iterator(thread_hull.begin()),
+                        std::make_move_iterator(thread_hull.end()));
   }
 }
 
