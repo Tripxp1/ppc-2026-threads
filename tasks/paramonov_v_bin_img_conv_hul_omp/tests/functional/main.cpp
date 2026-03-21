@@ -1,9 +1,12 @@
 #include <gtest/gtest.h>
+#include <omp.h>
 
 #include <algorithm>
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <iostream>
+#include <memory>
 #include <string>
 #include <tuple>
 #include <vector>
@@ -236,19 +239,121 @@ const std::array<TestCase, 8> kTestCases = {{
         "empty_image")
 }};
 
-// Используем AddFuncTaskOMP вместо AddFuncTask для OMP версии
-const auto kTestTasksList =
-    std::tuple_cat(ppc::util::AddFuncTask<ConvexHullOMP, InputType, ppc::task::TypeOfTask::kOMP>(
-        kTestCases, PPC_SETTINGS_paramonov_v_bin_img_conv_hul_omp));
+TEST_P(ConvexHullOMPFuncTest, RunFunctionalTests) {
+  ExecuteTest(GetParam());
+}
+
+const auto kTestTasksList = std::tuple_cat(
+    ppc::util::AddFuncTask<ConvexHullOMP, InputType>(kTestCases, PPC_SETTINGS_paramonov_v_bin_img_conv_hul_omp));
 
 const auto kGtestValues = ppc::util::ExpandToValues(kTestTasksList);
-
 const auto kFuncTestName = ConvexHullOMPFuncTest::PrintFuncTestName<ConvexHullOMPFuncTest>;
 
 INSTANTIATE_TEST_SUITE_P(ParamonovOMPHullTests, ConvexHullOMPFuncTest, kGtestValues, kFuncTestName);
 
-TEST_P(ConvexHullOMPFuncTest, RunFunctionalTests) {
-  ExecuteTest(GetParam());
+// Дополнительные тесты
+void ExecutePipeline(const std::shared_ptr<ConvexHullOMP> &task) {
+  task->Validation();
+  task->PreProcessing();
+  task->Run();
+  task->PostProcessing();
+}
+
+TEST(ConvexHullOMP, CheckNumThreads) {
+#ifdef _OPENMP
+  int max_threads = omp_get_max_threads();
+  EXPECT_GE(max_threads, 1);
+  std::cout << "OpenMP enabled. Max threads: " << max_threads << '\n';
+#else
+  std::cout << "OpenMP not enabled\n";
+#endif
+}
+
+TEST(ConvexHullOMP, EmptyImage) {
+  GrayImage img;
+  img.rows = 10;
+  img.cols = 10;
+  img.pixels.assign(100, 0);
+
+  auto task = std::make_shared<ConvexHullOMP>(img);
+  ExecutePipeline(task);
+
+  EXPECT_TRUE(task->GetConvexHulls().empty());
+}
+
+TEST(ConvexHullOMP, SinglePixel) {
+  GrayImage img;
+  img.rows = 10;
+  img.cols = 10;
+  img.pixels.assign(100, 0);
+  img.pixels[55] = 255;  // позиция 5,5
+
+  auto task = std::make_shared<ConvexHullOMP>(img);
+  ExecutePipeline(task);
+
+  auto hulls = task->GetConvexHulls();
+  ASSERT_EQ(hulls.size(), 1);
+  ASSERT_EQ(hulls[0].size(), 1);
+  EXPECT_EQ(hulls[0][0].row, 5);
+  EXPECT_EQ(hulls[0][0].col, 5);
+}
+
+TEST(ConvexHullOMP, TwoPixels) {
+  GrayImage img;
+  img.rows = 10;
+  img.cols = 10;
+  img.pixels.assign(100, 0);
+  img.pixels[11] = 255;  // позиция 1,1
+  img.pixels[66] = 255;  // позиция 6,6
+
+  auto task = std::make_shared<ConvexHullOMP>(img);
+  ExecutePipeline(task);
+
+  auto hulls = task->GetConvexHulls();
+  ASSERT_EQ(hulls.size(), 2);
+}
+
+TEST(ConvexHullOMP, Rectangle) {
+  GrayImage img;
+  img.rows = 10;
+  img.cols = 10;
+  img.pixels.assign(100, 0);
+  DrawRectangle(img, 2, 3, 5, 6);
+
+  auto task = std::make_shared<ConvexHullOMP>(img);
+  ExecutePipeline(task);
+
+  auto hulls = task->GetConvexHulls();
+  ASSERT_EQ(hulls.size(), 1);
+  EXPECT_EQ(hulls[0].size(), 4);
+}
+
+TEST(ConvexHullOMP, ParallelExecutionTest) {
+  GrayImage img;
+  img.rows = 500;
+  img.cols = 500;
+  img.pixels.assign(250000, 0);
+
+  // Создаем несколько прямоугольников
+  for (int i = 0; i < 10; ++i) {
+    int start_row = 10 + i * 40;
+    int start_col = 10 + i * 40;
+    for (int r = start_row; r < start_row + 20; ++r) {
+      for (int c = start_col; c < start_col + 20; ++c) {
+        size_t idx = static_cast<size_t>(r) * 500 + c;
+        img.pixels[idx] = 255;
+      }
+    }
+  }
+
+  auto task = std::make_shared<ConvexHullOMP>(img);
+
+  double start_time = omp_get_wtime();
+  ExecutePipeline(task);
+  double end_time = omp_get_wtime();
+
+  std::cout << "Parallel execution time: " << (end_time - start_time) << " seconds\n";
+  EXPECT_EQ(task->GetConvexHulls().size(), 10);
 }
 
 }  // namespace

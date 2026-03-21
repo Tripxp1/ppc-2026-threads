@@ -17,6 +17,10 @@ class ConvexHullOMP : public HullTaskBase {
 
   explicit ConvexHullOMP(const InputType &input);
 
+  // Методы для загрузки данных и получения результата
+  void LoadImage(const GrayImage &image);
+  [[nodiscard]] OutputType GetConvexHulls() const;
+
  private:
   bool ValidationImpl() override;
   bool PreProcessingImpl() override;
@@ -33,8 +37,10 @@ class ConvexHullOMP : public HullTaskBase {
   }
 
   void FloodFill(int start_row, int start_col, std::vector<bool> &visited, std::vector<PixelPoint> &component) const;
+  static bool AreAllPointsSame(const std::vector<PixelPoint> &points);
 
   InputType working_image_;
+  bool external_data_provided_ = false;
 };
 
 }  // namespace paramonov_v_bin_img_conv_hul_omp

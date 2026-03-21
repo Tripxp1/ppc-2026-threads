@@ -30,6 +30,16 @@ bool ComparePoints(const PixelPoint &a, const PixelPoint &b) {
 ConvexHullOMP::ConvexHullOMP(const InputType &input) {
   SetTypeOfTask(StaticTaskType());
   GetInput() = input;
+  GetOutput().clear();
+}
+
+void ConvexHullOMP::LoadImage(const GrayImage &image) {
+  working_image_ = image;
+  external_data_provided_ = true;
+}
+
+OutputType ConvexHullOMP::GetConvexHulls() const {
+  return GetOutput();
 }
 
 bool ConvexHullOMP::ValidationImpl() {
@@ -43,7 +53,9 @@ bool ConvexHullOMP::ValidationImpl() {
 }
 
 bool ConvexHullOMP::PreProcessingImpl() {
-  working_image_ = GetInput();
+  if (!external_data_provided_) {
+    working_image_ = GetInput();
+  }
   BinarizeImage();
   GetOutput().clear();
   return true;
@@ -98,6 +110,25 @@ void ConvexHullOMP::FloodFill(int start_row, int start_col, std::vector<bool> &v
   }
 }
 
+bool ConvexHullOMP::AreAllPointsSame(const std::vector<PixelPoint> &points) {
+  if (points.empty()) {
+    return true;
+  }
+
+  const PixelPoint &first = points[0];
+  const size_t num_points = points.size();
+  bool all_same = true;
+
+#pragma omp parallel for reduction(&& : all_same)
+  for (size_t i = 1; i < num_points; ++i) {
+    if (points[i].row != first.row || points[i].col != first.col) {
+      all_same = false;
+    }
+  }
+
+  return all_same;
+}
+
 void ConvexHullOMP::ExtractConnectedComponents() {
   const int rows = working_image_.rows;
   const int cols = working_image_.cols;
@@ -117,7 +148,7 @@ void ConvexHullOMP::ExtractConnectedComponents() {
     }
 
     int thread_id = omp_get_thread_num();
-    auto &local_hulls = thread_hulls[thread_id];  // local_hulls - это vector<vector<PixelPoint>>
+    auto &local_hulls = thread_hulls[thread_id];
 
 #pragma omp for schedule(dynamic, 64)
     for (int row = 0; row < rows; ++row) {
@@ -139,7 +170,7 @@ void ConvexHullOMP::ExtractConnectedComponents() {
 
           if (!component.empty()) {
             std::vector<PixelPoint> hull = ComputeConvexHull(component);
-            local_hulls.push_back(std::move(hull));  // добавляем оболочку в вектор оболочек потока
+            local_hulls.push_back(std::move(hull));
           }
         }
       }
@@ -164,8 +195,15 @@ std::vector<PixelPoint> ConvexHullOMP::ComputeConvexHull(const std::vector<Pixel
     return points;
   }
 
+  // Проверка на все одинаковые точки
+  if (AreAllPointsSame(points)) {
+    return {points[0]};
+  }
+
+  // Находим точку с наименьшими координатами
   auto lowest_point = *std::ranges::min_element(points, ComparePoints);
 
+  // Копируем и сортируем по полярному углу
   std::vector<PixelPoint> sorted_points;
   std::ranges::copy_if(points, std::back_inserter(sorted_points), [&lowest_point](const PixelPoint &p) {
     return (p.row != lowest_point.row) || (p.col != lowest_point.col);
@@ -183,6 +221,7 @@ std::vector<PixelPoint> ConvexHullOMP::ComputeConvexHull(const std::vector<Pixel
     return orient > 0;
   });
 
+  // Строим выпуклую оболочку
   std::vector<PixelPoint> hull;
   hull.push_back(lowest_point);
 
