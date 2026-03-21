@@ -1,4 +1,4 @@
-#include "paramonov_v_bin_img_conv_hul_omp/include/ops_omp.hpp"
+#include "paramonov_v_bin_img_conv_hul_omp/omp/include/ops_omp.hpp"
 
 #include <omp.h>
 
@@ -11,7 +11,7 @@
 #include <utility>
 #include <vector>
 
-#include "common.hpp"
+#include "paramonov_v_bin_img_conv_hul_omp/common/include/common.hpp"
 
 namespace paramonov_v_bin_img_conv_hul_omp {
 

@@ -8,8 +8,8 @@
 #include <tuple>
 #include <vector>
 
-#include "common.hpp"  // ← изменили: теперь подключаем свой local common.hpp
-#include "ops_omp.hpp"
+#include "paramonov_v_bin_img_conv_hul_omp/common/include/common.hpp"
+#include "paramonov_v_bin_img_conv_hul_omp/omp/include/ops_omp.hpp"
 #include "util/include/func_test_util.hpp"
 
 namespace paramonov_v_bin_img_conv_hul_omp {
