@@ -106,7 +106,6 @@ void ConvexHullOMP::ExtractConnectedComponents() {
 
   std::vector<bool> visited(total_pixels, false);
   std::vector<std::vector<PixelPoint>> all_components;
-  std::mutex components_mutex;
 
 #pragma omp parallel
   {
