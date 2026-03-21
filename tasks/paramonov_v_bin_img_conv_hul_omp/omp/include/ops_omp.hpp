@@ -16,10 +16,6 @@ class ConvexHullOMP : public HullTaskBase {
     return ppc::task::TypeOfTask::kOMP;
   }
 
-  ppc::task::TypeOfTask GetTypeOfTask() const override {
-    return StaticTaskType();
-  }
-
   explicit ConvexHullOMP(const InputType &input);
 
  private:
