@@ -71,8 +71,9 @@ TEST_P(ConvexHullOMPPerformanceTest, RunPerformanceTest) {
 
 namespace {
 
-const auto kPerformanceTasks =
-    ppc::util::MakeAllPerfTasks<InputType, ConvexHullOMP>(PPC_SETTINGS_paramonov_v_bin_img_conv_hul_omp);
+// Используем MakeAllPerfTasksOMP вместо MakeAllPerfTasks для OMP версии
+const auto kPerformanceTasks = ppc::util::MakeAllPerfTasks<InputType, ConvexHullOMP, ppc::task::TypeOfTask::kOMP>(
+    PPC_SETTINGS_paramonov_v_bin_img_conv_hul_omp);
 
 const auto kTestValues = ppc::util::TupleToGTestValues(kPerformanceTasks);
 
