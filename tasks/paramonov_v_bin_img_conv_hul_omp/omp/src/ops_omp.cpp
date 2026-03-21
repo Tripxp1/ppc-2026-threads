@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <iterator>
 #include <stack>
+#include <utility>
 #include <vector>
 
 #include "paramonov_v_bin_img_conv_hul_omp/common/include/common.hpp"
@@ -61,7 +62,7 @@ void ConvexHullOMP::BinarizeImage(uint8_t threshold) {
   const size_t size = working_image_.pixels.size();
   auto &pixels = working_image_.pixels;
 
-#pragma omp parallel for
+#pragma omp parallel for default(none) shared(pixels, threshold, size)
   for (size_t i = 0; i < size; ++i) {
     pixels[i] = pixels[i] > threshold ? uint8_t{255} : uint8_t{0};
   }
