@@ -9,20 +9,20 @@
 
 namespace paramonov_v_bin_img_conv_hul_omp {
 
-class ConvexHullOMP : public HullTaskBase {
+class ConvexHullOMP : public BaseTask {
  public:
-  static constexpr ppc::task::TypeOfTask StaticTaskType() {
+  static constexpr ppc::task::TypeOfTask GetStaticTypeOfTask() {
     return ppc::task::TypeOfTask::kOMP;
   }
 
   explicit ConvexHullOMP(const InputType &input);
 
- private:
   bool ValidationImpl() override;
   bool PreProcessingImpl() override;
   bool RunImpl() override;
   bool PostProcessingImpl() override;
 
+ private:
   void BinarizeImage(uint8_t threshold = 128);
   void ExtractConnectedComponents();
 

@@ -27,7 +27,7 @@ bool ComparePoints(const PixelPoint &a, const PixelPoint &b) {
 }  // namespace
 
 ConvexHullOMP::ConvexHullOMP(const InputType &input) {
-  SetTypeOfTask(StaticTaskType());
+  SetTypeOfTask(GetStaticTypeOfTask());
   GetInput() = input;
 }
 

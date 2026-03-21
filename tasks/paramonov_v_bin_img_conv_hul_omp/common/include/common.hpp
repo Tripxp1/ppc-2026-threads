@@ -31,6 +31,6 @@ struct GrayImage {
 
 using InputType = GrayImage;
 using OutputType = std::vector<std::vector<PixelPoint>>;
-using HullTaskBase = ppc::task::Task<InputType, OutputType>;
+using BaseTask = ppc::task::Task<InputType, OutputType>;
 
 }  // namespace paramonov_v_bin_img_conv_hul_omp
