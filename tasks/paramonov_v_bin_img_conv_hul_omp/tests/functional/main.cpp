@@ -149,7 +149,7 @@ const std::array<TestCase, 8> kTestCases = {
   auto img = CreateTestImage(5, 5);
   SetPixel(img, 2, 2);
   return img;
-}(), std::vector < std::vector < PixelPoint >>> {{{2, 2}}}, "single_pixel"),
+}(), std::vector<std::vector<PixelPoint>>{{{2, 2}}}, "single_pixel"),
 
      std::make_tuple(
          []() {
@@ -157,7 +157,7 @@ const std::array<TestCase, 8> kTestCases = {
   SetPixel(img, 1, 1);
   SetPixel(img, 6, 6);
   return img;
-}(), std::vector < std::vector < PixelPoint >>> {{{1, 1}}, {{6, 6}}}, "two_isolated_pixels"),
+}(), std::vector<std::vector<PixelPoint>>{{{1, 1}}, {{6, 6}}}, "two_isolated_pixels"),
 
      std::make_tuple(
          []() {
@@ -166,7 +166,7 @@ const std::array<TestCase, 8> kTestCases = {
     SetPixel(img, row, 3);
   }
   return img;
-}(), std::vector < std::vector < PixelPoint >>> {{{1, 3}, {5, 3}}}, "vertical_line"),
+}(), std::vector<std::vector<PixelPoint>>{{{1, 3}, {5, 3}}}, "vertical_line"),
 
      std::make_tuple(
          []() {
@@ -175,14 +175,14 @@ const std::array<TestCase, 8> kTestCases = {
     SetPixel(img, 3, col);
   }
   return img;
-}(), std::vector < std::vector < PixelPoint >>> {{{3, 1}, {3, 5}}}, "horizontal_line"),
+}(), std::vector<std::vector<PixelPoint>>{{{3, 1}, {3, 5}}}, "horizontal_line"),
 
      std::make_tuple(
          []() {
   auto img = CreateTestImage(10, 10);
   DrawRectangle(img, 2, 3, 5, 6);
   return img;
-}(), std::vector < std::vector < PixelPoint >>> {GetRectangleHull(2, 3, 5, 6)}, "rectangle"),
+}(), std::vector<std::vector<PixelPoint>>{GetRectangleHull(2, 3, 5, 6)}, "rectangle"),
 
      std::make_tuple(
          []() {
@@ -190,7 +190,7 @@ const std::array<TestCase, 8> kTestCases = {
   DrawRectangle(img, 2, 2, 4, 4);
   DrawRectangle(img, 9, 9, 11, 11);
   return img;
-}(), std::vector < std::vector < PixelPoint >>> {GetRectangleHull(2, 2, 4, 4), GetRectangleHull(9, 9, 11, 11)},
+}(), std::vector<std::vector<PixelPoint>>{GetRectangleHull(2, 2, 4, 4), GetRectangleHull(9, 9, 11, 11)},
          "two_rectangles"),
 
      std::make_tuple(
@@ -201,11 +201,11 @@ const std::array<TestCase, 8> kTestCases = {
   DrawRectangle(img, 20, 5, 22, 7);
   return img;
 }(),
-         std::vector < std::vector < PixelPoint >>>
-             {GetRectangleHull(1, 1, 3, 3), GetRectangleHull(10, 10, 12, 12), GetRectangleHull(20, 5, 22, 7)},
+         std::vector<std::vector<PixelPoint>>{GetRectangleHull(1, 1, 3, 3), GetRectangleHull(10, 10, 12, 12),
+                                              GetRectangleHull(20, 5, 22, 7)},
          "three_components"),
 
-     std::make_tuple(CreateTestImage(10, 10), std::vector < std::vector < PixelPoint >>> {}, "empty_image")}};
+     std::make_tuple(CreateTestImage(10, 10), std::vector<std::vector<PixelPoint>>{}, "empty_image")}};
 
 const auto kTestTasksList =
     ppc::util::AddFuncTask<ConvexHullOMP, InputType>(kTestCases, PPC_SETTINGS_paramonov_v_bin_img_conv_hul_omp);
