@@ -1,9 +1,8 @@
 #pragma once
 
-#include <cstddef>  // для size_t
-#include <cstdint>  // для uint8_t, int64_t
-#include <utility>  // для std::pair
-#include <vector>   // для std::vector
+#include <cstddef>
+#include <cstdint>
+#include <vector>
 
 #include "paramonov_v_bin_img_conv_hul_omp/common/include/common.hpp"
 #include "task/include/task.hpp"
@@ -35,15 +34,7 @@ class ConvexHullOMP : public HullTaskBase {
 
   void FloodFill(int start_row, int start_col, std::vector<bool> &visited, std::vector<PixelPoint> &component) const;
 
-  static void FindStartPoints(const std::vector<uint8_t> &pixels, int rows, int cols, std::vector<bool> &visited,
-                              std::vector<std::pair<int, int>> &start_points);
-
-  static void ProcessComponent(int start_row, int start_col, int rows, int cols, size_t total_pixels,
-                               const std::vector<uint8_t> &pixels, std::vector<std::vector<PixelPoint>> &components);
-
   InputType working_image_;
 };
 
 }  // namespace paramonov_v_bin_img_conv_hul_omp
-
-PPC_DEFINE_TASK(paramonov_v_bin_img_conv_hul_omp::ConvexHullOMP);
